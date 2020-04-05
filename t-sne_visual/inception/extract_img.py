@@ -41,7 +41,7 @@ else:
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('checkpoint_dir',
-                           './inception_model/inception_finetuned_models/birds_valid299/model.ckpt',
+                           './inception/inception_finetuned_models/birds_valid299/model.ckpt',
                            """Path where to read model checkpoints.""")
 
 tf.app.flags.DEFINE_integer('num_classes', 50,      # 20 for flowers
@@ -83,7 +83,7 @@ def extract(sess, images, pred_op):
     num_examples = len(images)
     n_batches = int(math.floor(float(num_examples) / float(bs)))
     indices = list(np.arange(num_examples))
-    np.random.shuffle(indices)
+#    np.random.shuffle(indices)
     for i in range(n_batches):
         print("\r%d" % i,end="")
         inp = []
