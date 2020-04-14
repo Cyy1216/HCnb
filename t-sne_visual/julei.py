@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import skfuzzy as fuzz
 
-true_img_features_path = 'file/img_fake_6.npy'
-fake_img_features_path = 'file/img_true_6.npy'
+true_img_features_path = 'file/img_fake_inception_v1.npy'
+fake_img_features_path = 'file/img_true_inception_v1.npy'
 file_path = '../DM-GAN/code/file_6000.npz'
 
 way = 'kmeans' # kmeans or fzcmeans
@@ -21,7 +21,7 @@ def get_pred(img, model, way):
     if way == 'kmeans':
         return model.predict(img)
     if way == 'fzcmeans':
-        u, _, _, _, _, _ = fuzz.cluster.cmeans_predict(img.T, model, 2, error=0.0000005, maxiter=3000)[0]
+        u = fuzz.cluster.cmeans_predict(img.T, model, 2, error=0.0000005, maxiter=3000)[0]
         return np.argmax(u, axis=0)
 
 def find_class_id(i, label_name, label_cluster, true_label_name):

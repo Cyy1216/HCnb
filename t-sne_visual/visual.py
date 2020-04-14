@@ -9,12 +9,13 @@ import scipy.misc
 sys.path.append('inception')
 sys.path.append('/home/huxinjian/workspace/inception_cub')
 from extract_img import extract_img, preprocess
+from extract_model import extract_image, INIT_model
 
-
-path = "../DM-GAN/code/file_6000.npz"
-PCA_dim = 100
+path = "../DM-GAN/code/file_3000_text.npz"
+extract_img_way = 'CNN' #'inception_v1'
+PCA_dim = 50
 TSNE_dim = 2
-T_perplexity = 120
+T_perplexity = 60
 
 def load_data(fullpath):
     print(fullpath)
@@ -44,58 +45,56 @@ def load_img(fake_img, true_img):
         img = scipy.misc.imread(path)
         true_images.append(img)
     print(len(true_images))
-    return [fake_images, true_images] 
+    return [fake_images, true_images]
+
+def extract(images, way):
+    all_img_features = []
+    i=0
+    while i < len(images):
+        img = images[i:i+1000]
+        i += 1000
+        if way == 'inception_v3':
+            img = extract_img(img)
+        else:
+            img = extract_image(img,way)
+
+        all_img_features.append(img)
+        if i >= len(images):break
+    return np.vstack(all_img_features)
 
 def main():
     pca_fake=PCA(n_components=PCA_dim)
     pca_true=PCA(n_components=PCA_dim)
+    pca_text=PCA(n_components=50)
 
-    img_path  = np.load(path)
-    class_ids, fake_path, true_path = img_path['class_id'], img_path['fake_path'], img_path['true_path']
+    img_path  = np.load(path, allow_pickle=True)
+    class_ids, fake_path, true_path, text_features = img_path['class_id'], img_path['fake_path'],\
+                                     img_path['true_path'], img_path['text_feature']
+    text_features = np.vstack(text_features)
 
     images = load_img(fake_path, true_path)
 
-    true_img = []
-    fake_img = []
+    fake_img = extract(images[0], extract_img_way)
+    true_img = extract(images[1], extract_img_way)
+    # print(true_img.shape, fake_img.shape)
 
-    i=0
-    while True:
-        if len(images[0]) - i < 1000:
-            img = images[0][i:]
-        else:
-            img = images[0][i:i+1000]
-        i += 1000
-        img = extract_img(img)
-        true_img.append(img)
-        if i >= len(images[0]):break
-    
-    i = 0
-    while True:
-        if len(images[1]) - i < 1000:
-            img = images[1][i:]
-        else:
-            img = images[1][i:i+1000]
-        i += 1000
-        img = extract_img(img)
-        fake_img.append(img)
-        if i>= len(images[1]):break
-    
-    true_img = np.vstack(true_img)
-    fake_img = np.vstack(fake_img)
-    print(true_img.shape, fake_img.shape)
-
-    img_pca = pca_fake.fit_transform(true_img)
-    img_X = TSNE(n_components=TSNE_dim, perplexity=TSNE_dim).fit_transform(img_pca)
+    img_pca = pca_true.fit_transform(true_img)
+    img_X = TSNE(n_components=TSNE_dim, perplexity=T_perplexity).fit_transform(img_pca)
  
-    img_pca = pca_true.fit_transform(fake_img)
-    img_Y = TSNE(n_components=TSNE_dim, perplexity=TSNE_dim).fit_transform(img_pca)
+    img_pca = pca_fake.fit_transform(fake_img)
+    img_Y = TSNE(n_components=TSNE_dim, perplexity=T_perplexity).fit_transform(img_pca)
 
-    np.save('img_fake.npy', img_X)
-    np.save('img_true.npy', img_Y)
+    img_pca = pca_text.fit_transform(text_features)
+    img_Z = TSNE(n_components=TSNE_dim, perplexity=T_perplexity).fit_transform(img_pca)
 
-    plt.scatter(img_X[:,0],img_X[:,1],s=8,color=(0.,0.5,0.))
-    plt.scatter(img_Y[:,0],img_Y[:,1],s=8,color=(0.8,0,0.))
+    np.save('file/img_true_{}.npy'.format(extract_img_way), img_X)
+    np.save('file/img_fake_{}.npy'.format(extract_img_way), img_Y)
+    np.save('file/text_{}.npy'.format(extract_img_way), img_Z)
+
+    plt.scatter(img_X[:,0],img_X[:,1],s=8,color=(0.8,0.,0.))
+    plt.scatter(img_Y[:,0],img_Y[:,1],s=8,color=(0.,0.5,0.))
+    plt.scatter(img_Z[:,0],img_Z[:,1],s=8,color=(0.,0,0.2))
     plt.show()
-
+    
 if __name__ == '__main__':
     main()
